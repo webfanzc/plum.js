@@ -1,7 +1,7 @@
 {
   "name": "plum.js",
   "type": "module",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "packageManager": "pnpm@8.1.1",
   "description": "canvas动态背景",
   "author": "webfanzc<webfanzc@126.com>",
