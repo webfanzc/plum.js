@@ -1,7 +1,7 @@
 {
   "name": "plum.js",
   "type": "module",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "packageManager": "pnpm@8.1.1",
   "description": "canvas动态背景",
   "author": "webfanzc<webfanzc@126.com>",
@@ -12,7 +12,11 @@
     "url": "git+https://github.com/webfanzc/plum.js.git"
   },
   "bugs": "https://github.com/webfanzc/plum.js/issues",
-  "keywords": ["canvas", "background", "plum"],
+  "keywords": [
+    "canvas",
+    "background",
+    "plum"
+  ],
   "sideEffects": false,
   "exports": {
     ".": {
