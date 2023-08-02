@@ -30,12 +30,13 @@ export class Plum {
       length: 10,
       minBranch: 50,
       color: '#99999920',
-      fps: 25,
+      fps: 60,
     },
-    public steps: (() => void)[] = [],
-    public prevSteps: Fn[] = [],
-    public lastExecutedTime: number = performance.now(),
-    public pauseableController: Nullable<Pauseable> = null,
+    private steps: Fn[] = [],
+    private defaultStep: Fn[] = [],
+    private prevSteps: Fn[] = [],
+    private lastExecutedTime: number = performance.now(),
+    private pauseableController: Nullable<Pauseable> = null,
     private stopped = false,
     private isActive = false,
   ) {
@@ -82,12 +83,11 @@ export class Plum {
       window = defaultWindow,
     } = options
 
-    const { isActive } = this
     let previousFrameTimestamp = 0
     let rafId: null | number = null
 
     const loop = (timestamp: DOMHighResTimeStamp) => {
-      if (!isActive || !window)
+      if (!this.isActive || !window)
         return
 
       const delta = timestamp - previousFrameTimestamp
@@ -98,7 +98,7 @@ export class Plum {
     }
 
     const resume = () => {
-      if (!isActive && window) {
+      if (!this.isActive && window) {
         this.isActive = true
         rafId = window.requestAnimationFrame(loop)
       }
@@ -122,12 +122,12 @@ export class Plum {
     }
   }
 
-  step(x: number, y: number, rad: number, counter = 0) {
+  step(x: number, y: number, rad: number, counter = { value: 0 }) {
     const { random } = Math
     const { minBranch, length } = this.opts
     const { size } = this
     const len = random() * length
-    counter++
+    counter.value += 1
 
     const [nx, ny] = this.polar2cart(x, y, len, rad)
     const ctx = this.context2D!
@@ -143,7 +143,7 @@ export class Plum {
     if (!size || nx < -100 || nx > size.width + 100 || ny < -100 || ny > size.height + 100)
       return
 
-    const rate = counter <= minBranch
+    const rate = counter.value <= minBranch
       ? 0.8
       : 0.5
 
@@ -155,7 +155,7 @@ export class Plum {
   }
 
   frame() {
-    if (performance.now() - this.lastExecutedTime < this.opts.fps)
+    if (performance.now() - this.lastExecutedTime < (1000 / this.opts.fps))
       return
 
     this.prevSteps = this.steps
@@ -175,7 +175,14 @@ export class Plum {
     })
   }
 
-  start(el: HTMLCanvasElement, size: { width: number; height: number } = { width: 600, height: 600 }) {
+  addDefaultStep(steps: { x: number; y: number; rad: number } | { x: number; y: number; rad: number }[]) {
+    if (!Array.isArray(steps))
+      steps = [steps]
+
+    this.defaultStep.push(...steps.map(step => () => this.step(step.x, step.y, step.rad)))
+  }
+
+  start(el: HTMLCanvasElement, size: { width: number; height: number } = { width: 600, height: 600 }, steps?: Fn[]) {
     this.canvas = el
     this.size = size
 
@@ -188,12 +195,14 @@ export class Plum {
     ctx.lineWidth = 1
     ctx.strokeStyle = this.opts.color
     this.prevSteps = []
-    this.steps = [
-      () => this.step(this.getRandomPos() * size.width, -5, DEG_90),
-      () => this.step(this.getRandomPos() * size.width, size.height + 5, -DEG_90),
-      () => this.step(-5, this.getRandomPos() * size.height, 0),
-      () => this.step(size.width + 5, this.getRandomPos() * size.height, DEG_180),
-    ]
+    this.steps = this.defaultStep.length
+      ? this.defaultStep
+      : [
+          () => this.step(this.getRandomPos() * size.width, -5, DEG_90),
+          () => this.step(this.getRandomPos() * size.width, size.height + 5, -DEG_90),
+          () => this.step(-5, this.getRandomPos() * size.height, 0),
+          () => this.step(size.width + 5, this.getRandomPos() * size.height, DEG_180),
+        ]
 
     this.pauseableController?.resume()
     this.stopped = false
